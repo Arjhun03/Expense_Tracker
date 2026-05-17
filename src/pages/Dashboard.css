@@ -245,3 +245,32 @@
   color: var(--expense-color);
   background: rgba(244, 63, 94, 0.1);
 }
+
+/* Timeframe Selector */
+.timeframe-selector {
+  display: flex;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 2px;
+}
+
+.timeframe-btn {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 18px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  transition: var(--transition-normal);
+}
+
+.timeframe-btn:hover {
+  color: var(--text-primary);
+}
+
+.timeframe-btn.active {
+  background: var(--accent-primary);
+  color: white;
+  box-shadow: var(--shadow-glow);
+}
+
