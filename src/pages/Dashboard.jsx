@@ -1,13 +1,40 @@
-import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { ArrowUpRight, ArrowDownRight, Wallet, AlertTriangle } from 'lucide-react';
 import useTransactions from '../hooks/useTransactions';
+import useBudgets from '../hooks/useBudgets';
 import { Link } from 'react-router-dom';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const { transactions, totals, loading } = useTransactions();
+  const { budgets, loading: budgetsLoading } = useBudgets();
 
-  if (loading) {
+  const budgetAlerts = useMemo(() => {
+    if (!budgets.length || !transactions.length) return [];
+    
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const currentMonthExpenses = transactions.filter(t => {
+      if (t.type !== 'expense') return false;
+      const txDate = new Date(t.date);
+      return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+    });
+
+    const spent = {};
+    currentMonthExpenses.forEach(tx => {
+      spent[tx.category] = (spent[tx.category] || 0) + tx.amount;
+    });
+
+    return budgets.map(budget => {
+      const spentAmount = spent[budget.category] || 0;
+      const percentage = (spentAmount / budget.limitAmount) * 100;
+      return { ...budget, spentAmount, percentage };
+    }).filter(b => b.percentage >= 80);
+  }, [budgets, transactions]);
+
+  if (loading || budgetsLoading) {
     return <div className="page-loader">Loading your finances...</div>;
   }
 
@@ -60,6 +87,24 @@ export default function Dashboard() {
       </div>
 
       <div className="recent-transactions-section">
+        {budgetAlerts.length > 0 && (
+          <div className="budget-alerts-widget" style={{ marginBottom: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle className="text-expense pulse-anim" size={20} />
+              Budget Alerts
+            </h3>
+            {budgetAlerts.map(alert => (
+              <div key={alert.id} className="alert-item">
+                <AlertTriangle size={18} className="text-expense" />
+                <div className="alert-text">
+                  You have used <strong>{alert.percentage.toFixed(0)}%</strong> of your <strong>{alert.category}</strong> budget.
+                </div>
+                <Link to="/budgets" className="text-accent hover-accent" style={{ fontSize: '0.85rem' }}>View</Link>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="section-header">
           <h2>Recent Transactions</h2>
           <Link to="/history" className="view-all-link">View All</Link>

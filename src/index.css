@@ -155,6 +155,15 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
 }
 
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  .main-content {
+    padding: 1.5rem 1rem 6.5rem 1rem;
+  }
+}
+
 /* Auth Layout */
 .auth-container {
   display: flex;

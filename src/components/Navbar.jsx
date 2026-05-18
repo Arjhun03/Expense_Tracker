@@ -7,7 +7,9 @@ import {
   History as HistoryIcon, 
   PieChart, 
   LogOut,
-  Wallet
+  Wallet,
+  Target,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import './Navbar.css';
 
@@ -54,6 +56,14 @@ export default function Navbar() {
         <NavLink to="/analytics" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
           <PieChart size={20} />
           <span>Analytics</span>
+        </NavLink>
+        <NavLink to="/budgets" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+          <Target size={20} />
+          <span>Budgets</span>
+        </NavLink>
+        <NavLink to="/settings" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
+          <SettingsIcon size={20} />
+          <span>Settings</span>
         </NavLink>
       </div>
 

@@ -1,0 +1,134 @@
+.budgets-page .budgets-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .budgets-page .budgets-container {
+    grid-template-columns: 350px 1fr;
+    align-items: start;
+  }
+}
+
+.budgets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.budget-item {
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  transition: var(--transition-normal);
+}
+
+.budget-item:hover {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.budget-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.budget-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.budget-amounts {
+  margin-bottom: 1rem;
+}
+
+.spent-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.limit-amount {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin-left: 4px;
+}
+
+/* Progress Bar Styles */
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px currentColor;
+}
+
+.status-good {
+  background-color: var(--income-color);
+  color: var(--income-color);
+}
+
+.status-warning {
+  background-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.status-danger {
+  background-color: var(--expense-color);
+  color: var(--expense-color);
+}
+
+.budget-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pulse-anim {
+  animation: pulse-warn 2s infinite;
+}
+
+@keyframes pulse-warn {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Alert Widget on Dashboard */
+.budget-alerts-widget {
+  margin-top: 2rem;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(244, 63, 94, 0.1);
+  border-left: 4px solid var(--expense-color);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.alert-item .alert-text {
+  flex: 1;
+  font-size: 0.95rem;
+}

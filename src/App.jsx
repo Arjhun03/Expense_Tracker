@@ -9,9 +9,12 @@ import Dashboard from './pages/Dashboard';
 import AddTransaction from './pages/AddTransaction';
 import History from './pages/History';
 import Analytics from './pages/Analytics';
+import Budgets from './pages/Budgets';
+import Settings from './pages/Settings';
 
 // Components
 import Navbar from './components/Navbar';
+import ReminderModal from './components/ReminderModal';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -25,6 +28,7 @@ function App() {
     <Router>
       <div className="app-container">
         {currentUser && <Navbar />}
+        {currentUser && <ReminderModal />}
         <main className="main-content">
           <Routes>
             <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/" />} />
@@ -34,6 +38,8 @@ function App() {
             <Route path="/add" element={<PrivateRoute><AddTransaction /></PrivateRoute>} />
             <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
             <Route path="/analytics" element={<PrivateRoute><Analytics /></PrivateRoute>} />
+            <Route path="/budgets" element={<PrivateRoute><Budgets /></PrivateRoute>} />
+            <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
           </Routes>
         </main>
       </div>

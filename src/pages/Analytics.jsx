@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
+import { PiggyBank, TrendingUp, AlertCircle } from 'lucide-react';
 import './Dashboard.css';
 
 const COLORS = ['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
@@ -68,6 +69,49 @@ export default function Analytics() {
     ];
   }, [transactions]);
 
+  // Calculate key financial insights
+  const insights = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+    const categoryTotals = {};
+    
+    transactions.forEach(t => {
+      if (t.type === 'income') {
+        income += t.amount;
+      } else {
+        expense += t.amount;
+        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+      }
+    });
+
+    const netSavings = income - expense;
+    const savingsRate = income > 0 ? (netSavings / income) * 100 : 0;
+    
+    let topCategory = 'None';
+    let topAmount = 0;
+    Object.keys(categoryTotals).forEach(cat => {
+      if (categoryTotals[cat] > topAmount) {
+        topAmount = categoryTotals[cat];
+        topCategory = cat;
+      }
+    });
+
+    return {
+      savingsRate,
+      netSavings,
+      topCategory,
+      topAmount
+    };
+  }, [transactions]);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
   // Custom label function to render percentage outside pie slices
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
     if (percent < 0.01) return null; // Don't show labels for < 1% to prevent overlap
@@ -106,87 +150,134 @@ export default function Analytics() {
           <p className="text-muted">No data available for analytics yet.</p>
         </div>
       ) : (
-        <div className="summary-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-          
-          <div className="glass-card form-card" style={{ width: '100%', maxWidth: 'none', height: '400px' }}>
-            <div className="section-header" style={{ marginBottom: '1.25rem', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>Expenses by Category</h3>
-              <div className="timeframe-selector">
-                <button 
-                  className={`timeframe-btn ${timeframe === 'all' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('all')}
-                >
-                  All
-                </button>
-                <button 
-                  className={`timeframe-btn ${timeframe === 'month' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('month')}
-                >
-                  Month
-                </button>
-                <button 
-                  className={`timeframe-btn ${timeframe === 'week' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('week')}
-                >
-                  Week
-                </button>
+        <>
+          {/* Financial Health Insights Cards */}
+          <div className="summary-cards" style={{ marginBottom: '1.5rem' }}>
+            <div className="glass-card summary-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div className="card-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--income-color)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <PiggyBank size={24} />
+              </div>
+              <div className="card-content">
+                <h3>Savings Rate</h3>
+                <h2 className="text-gradient" style={{ display: 'inline-block' }}>{insights.savingsRate.toFixed(1)}%</h2>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: insights.savingsRate > 30 ? 'var(--income-color)' : insights.savingsRate > 10 ? '#f59e0b' : 'var(--expense-color)', marginTop: '4px' }}>
+                  {insights.savingsRate > 30 ? 'Excellent Saver!' : insights.savingsRate > 10 ? 'Good Progress' : 'High Spending'}
+                </div>
               </div>
             </div>
-            
-            <ResponsiveContainer width="100%" height="80%">
-              {categoryData.length === 0 ? (
-                <div className="empty-state" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                  <p className="text-muted" style={{ fontSize: '0.9rem' }}>No expenses found for this timeframe.</p>
+
+            <div className="glass-card summary-card">
+              <div className="card-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                <TrendingUp size={24} />
+              </div>
+              <div className="card-content">
+                <h3>Net Savings</h3>
+                <h2 className={insights.netSavings >= 0 ? 'text-income' : 'text-expense'}>
+                  {formatCurrency(insights.netSavings)}
+                </h2>
+                <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+                  Money remaining
                 </div>
-              ) : (
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={4}
-                    dataKey="value"
-                    label={renderCustomizedLabel}
+              </div>
+            </div>
+
+            <div className="glass-card summary-card">
+              <div className="card-icon" style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--expense-color)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
+                <AlertCircle size={24} />
+              </div>
+              <div className="card-content">
+                <h3>Top Expense</h3>
+                <h2 className="text-expense">{insights.topCategory}</h2>
+                <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '4px' }}>
+                  Spent {formatCurrency(insights.topAmount)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="summary-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+            
+            <div className="glass-card form-card" style={{ width: '100%', maxWidth: 'none', height: '400px' }}>
+              <div className="section-header" style={{ marginBottom: '1.25rem', alignItems: 'center' }}>
+                <h3 style={{ margin: 0 }}>Expenses by Category</h3>
+                <div className="timeframe-selector">
+                  <button 
+                    className={`timeframe-btn ${timeframe === 'all' ? 'active' : ''}`}
+                    onClick={() => setTimeframe('all')}
                   >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                    All
+                  </button>
+                  <button 
+                    className={`timeframe-btn ${timeframe === 'month' ? 'active' : ''}`}
+                    onClick={() => setTimeframe('month')}
+                  >
+                    Month
+                  </button>
+                  <button 
+                    className={`timeframe-btn ${timeframe === 'week' ? 'active' : ''}`}
+                    onClick={() => setTimeframe('week')}
+                  >
+                    Week
+                  </button>
+                </div>
+              </div>
+              
+              <ResponsiveContainer width="100%" height="80%">
+                {categoryData.length === 0 ? (
+                  <div className="empty-state" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>No expenses found for this timeframe.</p>
+                  </div>
+                ) : (
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="45%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={4}
+                      dataKey="value"
+                      label={renderCustomizedLabel}
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      formatter={(value) => {
+                        const percentage = totalExpense > 0 ? ((value / totalExpense) * 100).toFixed(1) : 0;
+                        const formattedVal = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
+                        return [`${formattedVal} (${percentage}%)`, 'Amount'];
+                      }}
+                      contentStyle={{ backgroundColor: '#131a2a', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+
+            <div className="glass-card form-card" style={{ width: '100%', maxWidth: 'none', height: '400px' }}>
+              <h3 style={{ marginBottom: '1.5rem' }}>Income vs Expense Overview</h3>
+              <ResponsiveContainer width="100%" height="85%">
+                <BarChart data={incomeVsExpenseData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis dataKey="name" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" tickFormatter={(value) => `₹${value}`} />
                   <RechartsTooltip 
-                    formatter={(value) => {
-                      const percentage = totalExpense > 0 ? ((value / totalExpense) * 100).toFixed(1) : 0;
-                      const formattedVal = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
-                      return [`${formattedVal} (${percentage}%)`, 'Amount'];
-                    }}
+                    formatter={(value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value)}
                     contentStyle={{ backgroundColor: '#131a2a', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
                   />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              )}
-            </ResponsiveContainer>
-          </div>
+                  <Legend />
+                  <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-          <div className="glass-card form-card" style={{ width: '100%', maxWidth: 'none', height: '400px' }}>
-            <h3 style={{ marginBottom: '1.5rem' }}>Income vs Expense Overview</h3>
-            <ResponsiveContainer width="100%" height="85%">
-              <BarChart data={incomeVsExpenseData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" tickFormatter={(value) => `₹${value}`} />
-                <RechartsTooltip 
-                  formatter={(value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value)}
-                  contentStyle={{ backgroundColor: '#131a2a', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                />
-                <Legend />
-                <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Expense" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
           </div>
-
-        </div>
+        </>
       )}
     </div>
   );

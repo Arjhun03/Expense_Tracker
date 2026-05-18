@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowUpRight, ArrowDownRight, Save } from 'lucide-react';
@@ -27,6 +27,8 @@ export default function AddTransaction() {
 
     try {
       setLoading(true);
+      
+      // 1. Add the transaction document
       await addDoc(collection(db, `users/${currentUser.uid}/transactions`), {
         title,
         amount: Number(amount),
@@ -35,6 +37,46 @@ export default function AddTransaction() {
         date,
         createdAt: new Date().toISOString()
       });
+
+      // 2. Update the lastTransactionDate in Settings preferences
+      const settingsRef = doc(db, `users/${currentUser.uid}/preferences`, 'settings');
+      await setDoc(settingsRef, {
+        lastTransactionDate: new Date().toISOString()
+      }, { merge: true });
+
+      // 3. Trigger native notification if budget is exceeded
+      if (type === 'expense') {
+        const budgetRef = doc(db, `users/${currentUser.uid}/budgets`, category);
+        const budgetSnap = await getDoc(budgetRef);
+
+        if (budgetSnap.exists()) {
+          const budgetLimit = budgetSnap.data().limitAmount;
+
+          // Fetch all current month's expenses for this category to calculate total spent
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+          const q = query(
+            collection(db, `users/${currentUser.uid}/transactions`),
+            where('type', '==', 'expense'),
+            where('category', '==', category),
+            where('date', '>=', startOfMonth)
+          );
+
+          const querySnap = await getDocs(q);
+          let spent = 0;
+          querySnap.forEach(doc => {
+            spent += doc.data().amount;
+          });
+
+          if (spent > budgetLimit && Notification.permission === "granted") {
+            new Notification("Budget Alert! 🚨", {
+              body: `You have exceeded your ${category} budget of ₹${budgetLimit}! Total spent: ₹${spent}.`,
+            });
+          }
+        }
+      }
+
       navigate('/');
     } catch (err) {
       console.error("Error adding document: ", err);
