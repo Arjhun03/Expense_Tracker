@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Wallet, UserPlus } from 'lucide-react';
@@ -11,8 +11,19 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { signup, googleSignIn } = useAuth();
+  const { signup, googleSignIn, redirectError, setRedirectError } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (redirectError) {
+      if (redirectError.code === 'auth/unauthorized-domain') {
+        setError(`This domain (${window.location.hostname}) is not authorized in your Firebase console. Please go to Firebase Console > Authentication > Settings > Authorized Domains and add "${window.location.hostname}" to the list.`);
+      } else {
+        setError(redirectError.message || 'Failed to sign in with Google.');
+      }
+      setRedirectError(null);
+    }
+  }, [redirectError, setRedirectError]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -37,10 +48,20 @@ export default function Register() {
     try {
       setError('');
       setLoading(true);
-      await googleSignIn();
-      navigate('/');
+      const user = await googleSignIn();
+      if (user) {
+        navigate('/');
+      }
     } catch (err) {
-      setError('Failed to sign in with Google.');
+      if (err.code === 'auth/unauthorized-domain') {
+        setError(`This domain (${window.location.hostname}) is not authorized in your Firebase console. Please go to Firebase Console > Authentication > Settings > Authorized Domains and add "${window.location.hostname}" to the list.`);
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Popup blocked by your browser. Please allow popups for this site or try again.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError('Popup closed before completing sign-in. Please try again.');
+      } else {
+        setError('Failed to sign in with Google: ' + (err.message || 'unknown error'));
+      }
       console.error(err);
     }
     setLoading(false);

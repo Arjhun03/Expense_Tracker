@@ -52,28 +52,29 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   }
 
-  async function googleSignIn() {
-    // Use redirect on production (non‑localhost) domains to avoid popup blockers
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        // The redirect flow will be processed in the useEffect above via getRedirectResult
-      } catch (error) {
-        console.error('Redirect sign‑in error:', error);
-      }
-      return; // No user object returned immediately; it will be set after redirect
-    }
+  const [redirectError, setRedirectError] = useState(null);
 
-    // Development / localhost: use popup first
+  async function googleSignIn() {
     try {
+      setRedirectError(null);
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
       return result.user;
     } catch (error) {
-      // If popup is blocked or unsupported, fall back to redirect
-      if (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported') {
-        console.warn('Popup blocked or not supported, falling back to redirect...', error);
-        return signInWithRedirect(auth, googleProvider);
+      console.warn("Popup sign-in failed or blocked, trying redirect fallback...", error);
+      // Fallback to redirect if popup is blocked, closed, or unsupported
+      if (
+        error.code === 'auth/popup-blocked' || 
+        error.code === 'auth/operation-not-supported' ||
+        error.code === 'auth/popup-closed-by-user' ||
+        error.code === 'auth/cancelled-popup-request'
+      ) {
+        try {
+          return await signInWithRedirect(auth, googleProvider);
+        } catch (redirectErr) {
+          console.error("Redirect sign-in initialization failed:", redirectErr);
+          throw redirectErr;
+        }
       }
       throw error;
     }
@@ -89,6 +90,7 @@ export function AuthProvider({ children }) {
       })
       .catch((error) => {
         console.error("Redirect sign-in error:", error);
+        setRedirectError(error);
       });
 
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -104,7 +106,9 @@ export function AuthProvider({ children }) {
     signup,
     login,
     logout,
-    googleSignIn
+    googleSignIn,
+    redirectError,
+    setRedirectError
   };
 
   return (
