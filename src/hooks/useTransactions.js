@@ -13,7 +13,7 @@ export default function useTransactions() {
 
     const q = query(
       collection(db, `users/${currentUser.uid}/transactions`),
-      orderBy('date', 'desc')
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

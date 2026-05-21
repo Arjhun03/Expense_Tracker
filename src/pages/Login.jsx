@@ -83,6 +83,7 @@ export default function Login() {
         </div>
 
         <button 
+          type="button"
           disabled={loading} 
           onClick={handleGoogleLogin} 
           className="btn-secondary google-btn"

@@ -24,7 +24,7 @@ export default function History() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [sortBy, setSortBy] = useState('date-desc');
+  const [sortBy, setSortBy] = useState('createdAt-desc');
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -71,7 +71,7 @@ export default function History() {
   const filteredTransactions = useMemo(() => {
     return transactions
       .filter(tx => {
-        const matchesSearch = tx.title.toLowerCase().includes(search.toLowerCase());
+        const matchesSearch = !search || (tx.title?.toLowerCase().includes(search.toLowerCase()));
         const matchesType = typeFilter === 'all' || tx.type === typeFilter;
         const matchesCategory = categoryFilter === 'all' || tx.category === categoryFilter;
         
@@ -88,7 +88,11 @@ export default function History() {
         return matchesSearch && matchesType && matchesCategory && matchesStart && matchesEnd;
       })
       .sort((a, b) => {
-        if (sortBy === 'date-desc') {
+        if (sortBy === 'createdAt-desc') {
+          return new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date);
+        } else if (sortBy === 'createdAt-asc') {
+          return new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date);
+        } else if (sortBy === 'date-desc') {
           return new Date(b.date) - new Date(a.date);
         } else if (sortBy === 'date-asc') {
           return new Date(a.date) - new Date(b.date);
@@ -194,8 +198,10 @@ export default function History() {
           <div className="filter-group">
             <label>Sort By</label>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
-              <option value="date-desc">Newest First</option>
-              <option value="date-asc">Oldest First</option>
+              <option value="createdAt-desc">Newest First</option>
+              <option value="createdAt-asc">Oldest First</option>
+              <option value="date-desc">Date (Newest First)</option>
+              <option value="date-asc">Date (Oldest First)</option>
               <option value="amount-desc">Amount: High to Low</option>
               <option value="amount-asc">Amount: Low to High</option>
             </select>

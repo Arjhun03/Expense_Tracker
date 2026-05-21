@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  signInWithPopup
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult
 } from 'firebase/auth';
 import { auth, googleProvider, db } from '../firebase/config';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -22,13 +24,18 @@ export function AuthProvider({ children }) {
   // Helper to ensure user document exists in Firestore
   const ensureUserDoc = async (user) => {
     if (!user) return;
-    const userRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(userRef);
-    if (!docSnap.exists()) {
-      await setDoc(userRef, {
-        email: user.email,
-        createdAt: new Date().toISOString()
-      });
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userRef);
+      if (!docSnap.exists()) {
+        await setDoc(userRef, {
+          email: user.email,
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.error("Error ensuring user document exists in Firestore:", err);
+      // Catch error so authentication flow is not blocked
     }
   };
 
@@ -45,12 +52,36 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   }
 
-  function googleSignIn() {
-    return signInWithPopup(auth, googleProvider)
-      .then(result => ensureUserDoc(result.user));
+  async function googleSignIn() {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      await ensureUserDoc(result.user);
+      return result.user;
+    } catch (error) {
+      // If popup is blocked or not supported, try redirect fallback
+      if (
+        error.code === 'auth/popup-blocked' || 
+        error.code === 'auth/operation-not-supported'
+      ) {
+        console.warn("Popup blocked or not supported, falling back to redirect...");
+        return signInWithRedirect(auth, googleProvider);
+      }
+      throw error;
+    }
   }
 
   useEffect(() => {
+    // Process redirect result if any
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user) {
+          await ensureUserDoc(result.user);
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect sign-in error:", error);
+      });
+
     const unsubscribe = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
       setLoading(false);

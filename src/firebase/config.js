@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, setPersistence, browserLocalPersistence, GoogleAuthProvider } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeQNY4hGZFQWqLMWxq0vkVfWf9OwGAAC0",
@@ -22,10 +22,16 @@ const auth = getAuth(app);
 setPersistence(auth, browserLocalPersistence)
   .catch((error) => console.error("Auth persistence error:", error));
 
-// Setup Firestore with offline caching enabled
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-});
+// Setup Firestore with offline caching enabled, fallback to default if unsupported
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+  });
+} catch (error) {
+  console.error("Firestore persistence initialization failed, falling back to default:", error);
+  db = getFirestore(app);
+}
 
 const googleProvider = new GoogleAuthProvider();
 

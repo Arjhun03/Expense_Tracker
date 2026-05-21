@@ -101,6 +101,7 @@ export default function Register() {
         </div>
 
         <button 
+          type="button"
           disabled={loading} 
           onClick={handleGoogleLogin} 
           className="btn-secondary google-btn"
