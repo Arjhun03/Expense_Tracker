@@ -53,17 +53,26 @@ export function AuthProvider({ children }) {
   }
 
   async function googleSignIn() {
+    // Use redirect on production (non‑localhost) domains to avoid popup blockers
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        // The redirect flow will be processed in the useEffect above via getRedirectResult
+      } catch (error) {
+        console.error('Redirect sign‑in error:', error);
+      }
+      return; // No user object returned immediately; it will be set after redirect
+    }
+
+    // Development / localhost: use popup first
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await ensureUserDoc(result.user);
       return result.user;
     } catch (error) {
-      // If popup is blocked or not supported, try redirect fallback
-      if (
-        error.code === 'auth/popup-blocked' || 
-        error.code === 'auth/operation-not-supported'
-      ) {
-        console.warn("Popup blocked or not supported, falling back to redirect...");
+      // If popup is blocked or unsupported, fall back to redirect
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported') {
+        console.warn('Popup blocked or not supported, falling back to redirect...', error);
         return signInWithRedirect(auth, googleProvider);
       }
       throw error;
